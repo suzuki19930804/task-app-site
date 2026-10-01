@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n>タスク Web 試作版</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="icon-button only-narrow" data-action="toggle-sidebar" aria-label="タスク一覧" data-i18n-attr="aria-label">☰</button>
+      <h1 class="brand" data-action="go-calendar">
+        <span data-i18n>タスク</span> <span class="badge" data-i18n>Web 試作版</span>
+      </h1>
+      <div class="topbar-actions">
+        <label class="button import-button">
+          <span data-i18n>読み込む</span>
+          <input type="file" id="file-input" accept=".json,application/json" hidden />
+        </label>
+        <button id="sync-status" class="sync-status" data-action="sync-now" hidden></button>
+        <button class="button primary" data-action="export">
+          <span data-i18n>書き出す</span><span id="dirty-dot" class="dirty-dot" hidden></span>
+        </button>
+        <button class="button" data-action="open-settings" title="設定" data-i18n-attr="title">⚙︎ <span data-i18n>設定</span></button>
+      </div>
+    </header>
+    <div class="layout">
+      <aside id="sidebar" class="sidebar"></aside>
+      <div id="scrim" class="scrim" data-action="toggle-sidebar"></div>
+      <main id="main" class="main"></main>
+    </div>
+    <dialog id="import-dialog" class="dialog">
+      <h2 data-i18n>データを読み込みます</h2>
+      <p data-summary></p>
+      <p class="note" data-i18n>「合わせる」なら、同じやることは新しく変更した方を採用し、片方にしかないものは残します（どちらかで削除したものは消えます）。「置き換える」なら、今のデータは読み込んだデータに置き換わります。</p>
+      <p class="note" data-dirty-note hidden data-i18n>書き出していない変更があります。「置き換える」を選ぶと、その変更は消えます。</p>
+      <form method="dialog" class="dialog-buttons">
+        <button class="button" value="cancel" data-i18n>キャンセル</button>
+        <button class="button danger" value="replace" data-i18n>置き換える</button>
+        <button class="button primary" value="merge" data-i18n>合わせる（おすすめ）</button>
+      </form>
+    </dialog>
+    <dialog id="help-dialog" class="dialog">
+      <h2 data-i18n>使い方</h2>
+      <ol>
+        <li data-i18n>iPhone のアプリで「設定」→「データを書き出す」を選び、ファイルをこのパソコンに送ります（AirDrop・メール・iCloud Drive など）。</li>
+        <li data-i18n>この画面の「読み込む」でそのファイルを選びます。データはこのブラウザの中だけに保存され、どこにも送られません。</li>
+        <li data-i18n>カレンダー・タスク・やることを見たり編集したりできます。</li>
+        <li data-i18n>「書き出す」でファイルに保存し、iPhone に送ります。iPhone のアプリで「データを読み込む」→「今のデータと合わせる」を選ぶと反映されます。</li>
+      </ol>
+      <p class="note" data-i18n>「合わせる」では、同じやることは新しく変更した方が残り、片方にしかないものはどちらも残ります。iPhone とパソコンの両方で編集しても大丈夫です（iPhone のアプリも最新版にしてください）。</p>
+      <p class="note" data-i18n>Chrome・Edge では、設定の「ファイルで同期」で iPhone のアプリと同じ同期ファイル（task-app-sync.json）を選ぶと、ファイルを送らなくても自動で合わせられます。カラーテーマと「達成度を表示」の設定は、このブラウザだけに保存されます。</p>
+      <p class="note" data-i18n>片方で削除したタスクややることは、合わせるともう片方からも消えます。ファイルで同期しているときは、右上に最後に同期した時刻が表示され、押すとすぐに合わせます。ネットにつながっていないときに編集しても、次に同期したときに合わせられます。Google ドライブや OneDrive では、ファイルのダウンロードが終わるまで同期できないことがあります。そのときは少し待ってからもう一度押してください。</p>
+      <p class="note" data-i18n>無料版では、タスク 3 つまでとカレンダー・締め切りを使えます。iPhone のアプリで完全版を購入し、その iPhone とファイルで同期するか、その iPhone で書き出したファイルを読み込むと、タスクの数の制限がなくなり、日記・ファイルで同期・カラーテーマも使えるようになります。</p>
+      <form method="dialog">
+        <button class="button primary" data-i18n>閉じる</button>
+      </form>
+    </dialog>
+    <script src="i18n.js"></script>
+    <script src="model.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 読み込んだデータに script が混ざっていても動かないようにする（スクリプトは同梱の 3 ファイルだけ、外部との通信なし） -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'" />
     <title data-i18n>タスク Web 試作版</title>
     <link rel="stylesheet" href="style.css" />
   </head>

@@ -11,13 +11,53 @@
   // ---- 読み込み・書き出し ----
 
   /// 書き出したファイル（AppBackup）か、アプリの保存ファイル（tasks.json）を読み込む
+  // 読み込んだファイルの中身は信用せず、型をそろえる（文字のはずの項目に配列やオブジェクトが入っていても画面が壊れないように）
+  function str(value, fallback = "") {
+    return typeof value === "string" ? value : fallback;
+  }
+
+  function strArray(value) {
+    return Array.isArray(value) ? value.filter((v) => typeof v === "string") : [];
+  }
+
+  function objArray(value) {
+    return Array.isArray(value) ? value.filter((v) => v && typeof v === "object" && !Array.isArray(v)) : [];
+  }
+
+  /// ID は文字列だけを受け付け、無ければ新しく付ける（画面の data 属性に入れるため）
+  function idOf(value) {
+    return typeof value === "string" && value ? value : uuid();
+  }
+
+  /// タグの色は決まった名前だけを残す
+  function importTagColors(value) {
+    const result = {};
+    if (!value || typeof value !== "object") return result;
+    for (const [tag, color] of Object.entries(value)) {
+      if (TAG_COLORS.includes(color)) result[tag] = color;
+    }
+    return result;
+  }
+
+  function importDiary(value) {
+    if (!value || typeof value !== "object") return null;
+    const section = (sec) => ({ ...sec, id: idOf(sec.id), title: str(sec.title), text: str(sec.text) });
+    return {
+      ...value,
+      template: objArray(value.template).map(section),
+      entries: objArray(value.entries)
+        .filter((e) => typeof e.day === "string")
+        .map((e) => ({ ...e, id: idOf(e.id), title: str(e.title), text: str(e.text), sections: objArray(e.sections).map(section) })),
+    };
+  }
+
   function parseBackup(text) {
     const json = JSON.parse(text);
     if (Array.isArray(json)) {
       // tasks.json は日時を 2001 年からの秒数で保存している
       return {
         version: 1,
-        tasks: json.map((t) => importTask(t, fromReferenceSeconds)),
+        tasks: objArray(json).map((t) => importTask(t, fromReferenceSeconds)),
         diary: null,
         tagColors: {},
         memo: "",
@@ -29,14 +69,14 @@
     }
     return {
       ...json,
-      tasks: json.tasks.map((t) => importTask(t, fromISO)),
-      diary: json.diary ?? null,
-      tagColors: json.tagColors ?? {},
-      memo: json.memo ?? "",
+      tasks: objArray(json.tasks).map((t) => importTask(t, fromISO)),
+      diary: importDiary(json.diary),
+      tagColors: importTagColors(json.tagColors),
+      memo: str(json.memo),
       memoUpdatedAt: fromISO(json.memoUpdatedAt),
-      deleted: (json.deleted ?? [])
+      deleted: objArray(json.deleted)
         .map((t) => ({ id: t.id, deletedAt: fromISO(t.deletedAt) }))
-        .filter((t) => t.deletedAt != null),
+        .filter((t) => typeof t.id === "string" && t.deletedAt != null),
     };
   }
 
@@ -80,10 +120,12 @@
   function importTask(task, date) {
     return {
       ...task,
+      id: idOf(task.id),
+      title: str(task.title),
       createdAt: date(task.createdAt) ?? Date.now(),
-      memo: task.memo ?? "",
-      tags: task.tags ?? [],
-      checklist: (task.checklist ?? []).map((item) => importItem(item, date)),
+      memo: str(task.memo),
+      tags: strArray(task.tags),
+      checklist: objArray(task.checklist).map((item) => importItem(item, date)),
       updatedAt: date(task.updatedAt),
     };
   }
@@ -91,17 +133,23 @@
   function importItem(item, date) {
     const result = {
       ...item,
-      progress: item.progress ?? (item.isDone ? 100 : 0),
-      memo: item.memo ?? "",
-      completions: (item.completions ?? []).map((c) => ({
-        ...c,
-        completedAt: date(c.completedAt),
-        due: date(c.due),
-      })),
-      occurrenceProgress: (item.occurrenceProgress ?? []).map((p) => ({
-        ...p,
-        due: date(p.due),
-      })),
+      id: idOf(item.id),
+      title: str(item.title),
+      progress: typeof item.progress === "number" ? item.progress : item.isDone ? 100 : 0,
+      memo: str(item.memo),
+      completions: objArray(item.completions)
+        .map((c) => ({
+          ...c,
+          completedAt: date(c.completedAt),
+          due: date(c.due),
+        }))
+        .filter((c) => c.completedAt != null),
+      occurrenceProgress: objArray(item.occurrenceProgress)
+        .map((p) => ({
+          ...p,
+          due: date(p.due),
+        }))
+        .filter((p) => p.due != null),
     };
     delete result.isDone;
     result.updatedAt = date(item.updatedAt);

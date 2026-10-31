@@ -283,8 +283,8 @@
   }
 
   function colorValue(name) {
-    // 色のないタスクはテーマの色
-    return name ? M.TAG_COLOR_VALUES[name] : "var(--accent)";
+    // 色のないタスクはテーマの色。決まった色の名前以外（読み込んだデータに入っていた値）はテーマの色にする
+    return name && Object.prototype.hasOwnProperty.call(M.TAG_COLOR_VALUES, name) ? M.TAG_COLOR_VALUES[name] : "var(--accent)";
   }
 
   function findTask(id) {
@@ -479,7 +479,7 @@
                     ? tr("全部完了 🎉")
                     : tr("{0} / {1} 完了", done, task.checklist.length);
               return `
-            <button class="side-item ${task.id === selectedID ? "selected" : ""}" data-action="open-task" data-task="${task.id}">
+            <button class="side-item ${task.id === selectedID ? "selected" : ""}" data-action="open-task" data-task="${esc(task.id)}">
               <span class="dot" style="background:${colorValue(M.taskColor(task, state.data.tagColors))}"></span>
               <span style="min-width:0">
                 <div class="title">${esc(task.title)}</div>
@@ -653,7 +653,7 @@
     const editable = canEdit(entry);
     const progress = M.entryProgress(entry);
     const repeating = M.isRepeating(entry.item);
-    const attrs = `data-task="${entry.taskID}" data-item="${entry.item.id}" data-date="${entry.date}"`;
+    const attrs = `data-task="${esc(entry.taskID)}" data-item="${esc(entry.item.id)}" data-date="${esc(entry.date)}"`;
     let check;
     if (editable) {
       check = `<button class="check ${entry.isDone ? "on" : ""}" data-action="toggle-entry" ${attrs} aria-label="${tr(entry.isDone ? "未完了に戻す" : "完了にする")}">${entry.isDone ? "✓" : ""}</button>`;
@@ -703,31 +703,31 @@
     return `
       <button class="back" data-action="go-calendar">‹ ${tr("カレンダー")}</button>
       <div class="card" style="--tint:${tint}">
-        <input class="title-input" data-input="task-title" data-task="${task.id}" value="${esc(task.title)}" aria-label="${tr("タスク名")}">
+        <input class="title-input" data-input="task-title" data-task="${esc(task.id)}" value="${esc(task.title)}" aria-label="${tr("タスク名")}">
         <div class="chips" style="margin:8px 0 0">
-          ${task.tags.map((tag) => `<span class="chip tag-chip" style="--chip:${colorValue(M.colorForTag(state.data.tagColors, tag))}">#${esc(tag)}<button data-action="remove-tag" data-task="${task.id}" data-tag="${esc(tag)}" aria-label="${esc(tr("タグ「{0}」を外す", tag))}">✕</button></span>`).join("")}
-          <form class="inline-form" data-form="add-tag" data-task="${task.id}" style="margin:0">
+          ${task.tags.map((tag) => `<span class="chip tag-chip" style="--chip:${colorValue(M.colorForTag(state.data.tagColors, tag))}">#${esc(tag)}<button data-action="remove-tag" data-task="${esc(task.id)}" data-tag="${esc(tag)}" aria-label="${esc(tr("タグ「{0}」を外す", tag))}">✕</button></span>`).join("")}
+          <form class="inline-form" data-form="add-tag" data-task="${esc(task.id)}" style="margin:0">
             <input type="text" name="tag" list="tag-list" placeholder="${tr("タグを追加")}" style="width:130px">
             <datalist id="tag-list">${existing.map((t) => `<option value="${esc(t)}">`).join("")}</datalist>
           </form>
         </div>
       </div>
       <div class="section-title"><span>${tr("メモ")}</span></div>
-      <div class="card"><textarea class="autogrow" data-input="task-memo" data-task="${task.id}" rows="2" placeholder="${tr("タップしてメモを入力")}">${esc(task.memo)}</textarea></div>
+      <div class="card"><textarea class="autogrow" data-input="task-memo" data-task="${esc(task.id)}" rows="2" placeholder="${tr("タップしてメモを入力")}">${esc(task.memo)}</textarea></div>
       <div class="section-title"><span>${tr("やることリスト")}</span><span class="muted small-text">${tr("上ほど優先度が高くなります")}</span></div>
       <div class="card" style="--tint:${tint}">
         ${task.checklist.map((item, index) => checklistRow(task, item, index)).join("") || `<p class="muted small-text">${tr("やることはまだありません")}</p>`}
-        <form class="inline-form" data-form="add-item" data-task="${task.id}">
+        <form class="inline-form" data-form="add-item" data-task="${esc(task.id)}">
           <input type="text" name="title" placeholder="${tr("やることを追加")}">
           <button class="button small primary">${tr("追加")}</button>
         </form>
       </div>
-      <button class="button danger" data-action="delete-task" data-task="${task.id}">${tr("タスクを削除")}</button>`;
+      <button class="button danger" data-action="delete-task" data-task="${esc(task.id)}">${tr("タスクを削除")}</button>`;
   }
 
   function checklistRow(task, item, index) {
     const due = M.nextDue(item);
-    const attrs = `data-task="${task.id}" data-item="${item.id}"`;
+    const attrs = `data-task="${esc(task.id)}" data-item="${esc(item.id)}"`;
     return `
       <div class="checklist-row">
         <span class="muted small-text" style="width:18px;text-align:center">${index + 1}</span>
@@ -747,14 +747,14 @@
 
   function itemView(task, item) {
     const tint = colorValue(M.taskColor(task, state.data.tagColors));
-    const attrs = `data-task="${task.id}" data-item="${item.id}"`;
+    const attrs = `data-task="${esc(task.id)}" data-item="${esc(item.id)}"`;
     const kind = M.ruleKind(item.repeatRule);
     const next = M.nextDue(item);
     const weekdays =
       kind === "weekly" ? item.repeatRule.weekly.weekdays || [] : [];
     const backTarget =
       state.view.from === "task"
-        ? `data-action="open-task" data-task="${task.id}"`
+        ? `data-action="open-task" data-task="${esc(task.id)}"`
         : `data-action="go-calendar"`;
     return `
       <button class="back" ${backTarget}>‹ ${state.view.from === "task" ? esc(task.title) : tr("カレンダー")}</button>
@@ -868,7 +868,7 @@
         .map(
           (section) => `
         <div class="section-title"><span>${esc(section.title)}</span></div>
-        <div class="card"><textarea class="autogrow" data-input="diary-text" data-section="${section.id}" rows="3" placeholder="${esc(tr("タップして{0}のことを書く", section.title))}">${esc(section.text)}</textarea></div>`,
+        <div class="card"><textarea class="autogrow" data-input="diary-text" data-section="${esc(section.id)}" rows="3" placeholder="${esc(tr("タップして{0}のことを書く", section.title))}">${esc(section.text)}</textarea></div>`,
         )
         .join("")}
       ${
@@ -879,7 +879,7 @@
           ${completed.map((c) => `<div class="small-text" style="padding:3px 0">✅ ${esc(c.itemTitle)} <span class="muted">（${esc(c.taskTitle)}）</span></div>`).join("")}
           <div class="muted small-text" style="margin-top:10px">${tr("完了したやることを日記に追記")}</div>
           <div class="chips" style="margin:6px 0 0">
-            ${entry.sections.map((s) => `<button class="button small" data-action="diary-append" data-section="${s.id}">${esc(tr("「{0}」に追記", s.title))}</button>`).join("")}
+            ${entry.sections.map((s) => `<button class="button small" data-action="diary-append" data-section="${esc(s.id)}">${esc(tr("「{0}」に追記", s.title))}</button>`).join("")}
           </div>
         </div>`
           : ""
@@ -902,7 +902,7 @@
           ? entries
               .map(
                 (e) => `
-        <button class="card diary-card" data-action="open-diary" data-day="${e.day}">
+        <button class="card diary-card" data-action="open-diary" data-day="${esc(e.day)}">
           <span style="flex:1;min-width:0;text-align:left">
             <div class="achievement-title">${esc(dayTitle(M.dateForDayKey(e.day)))}</div>
             <div class="muted small-text preview">${esc(M.diaryPreview(e))}</div>
